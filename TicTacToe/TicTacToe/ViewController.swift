@@ -9,35 +9,96 @@ class ViewController:UIViewController{
     var filled:[Int] = []
     let allPositions:[Int] = [1,2,3,4,5,6,7,8,9]
     let positionMatch:Int = 3
+    var noTie = true
+    var result:UILabel!
+    var tie:UILabel!
+    let localizedTie = NSLocalizedString("tie", comment: "")
+    let resultString = NSLocalizedString("Player %d Wins!", comment: "")
+    
     
     fileprivate let collectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
         let cv = UICollectionView(frame: .zero, collectionViewLayout: layout)
         cv.translatesAutoresizingMaskIntoConstraints = false
-        cv.register(CustomCell.self , forCellWithReuseIdentifier: "cell")
+        cv.register(ImageDisplay.self , forCellWithReuseIdentifier: "cell")
         return cv
     }()
     
     func winDisplay(playerNumber : Int){
-        let result = UILabel()
-        result.text = "Player \(playerNumber) wins"
-        result.frame = CGRect(x: 0, y: 100, width: self.view.frame.width, height: 120)
+        result = UILabel()
+        result.translatesAutoresizingMaskIntoConstraints = false
         result.textAlignment = .center
         result.textColor = UIColor.white
         result.backgroundColor = UIColor.darkGray
+        result.text = String.localizedStringWithFormat(resultString, playerNumber)
         view.addSubview(result)
+        
+        NSLayoutConstraint.activate([
+            result.topAnchor.constraint(equalTo:view.topAnchor,constant: 80),
+            result.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            result.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            result.bottomAnchor.constraint(equalTo: view.bottomAnchor,constant: -450)
+        ])
     }
     
     func gameOver(){
-        let label = UILabel()
-        label.text = "It's a tie!"
-        label.frame = CGRect(x: 0, y: 100, width: self.view.frame.width, height: 120)
-        label.textAlignment = .center
-        label.textColor = UIColor.white
-        label.backgroundColor = UIColor.darkGray
-        view.addSubview(label)
+        tie = UILabel()
+        tie.translatesAutoresizingMaskIntoConstraints = false
+        tie.textAlignment = .center
+        tie.textColor = UIColor.white
+        tie.backgroundColor = UIColor.darkGray
+        tie.text = String.localizedStringWithFormat(localizedTie)
+        view.addSubview(tie)
+        
+        NSLayoutConstraint.activate([
+            tie.topAnchor.constraint(equalTo:view.topAnchor,constant: 80),
+            tie.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            tie.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            tie.bottomAnchor.constraint(equalTo: view.bottomAnchor,constant: -450)
+        ])
     }
     
+    func determine(index : Int){
+        if playerNumber == 2 {
+            playerNumber = 1
+            player2.append(index)
+            for x in 0 ..< win.count {
+                position = 0
+                for y in 0 ..< win[x].count {
+                    for k in 0 ..< player2.count{
+                        if( win[x][y] == player2[k]){
+                            position += 1
+                        }
+                    }
+                }
+                if(position == positionMatch){
+                    noTie = false
+                    winDisplay(playerNumber: 2)
+                    break
+                }
+            }
+        }
+        else{
+            playerNumber = 2
+            player1.append(index)
+            for x in 0 ..< win.count {
+                position = 0
+                for y in 0 ..< win[x].count {
+                    for k in 0 ..< player1.count{
+                        if( win[x][y] == player1[k]){
+                            position += 1
+                        }
+                    }
+                }
+                if(position == positionMatch){
+                    noTie = false
+                    winDisplay(playerNumber: 1)
+                    break
+                }
+            }
+        }
+        
+    }
     override func viewDidLoad() {
         super.viewDidLoad()
         view.addSubview(collectionView)
@@ -59,116 +120,33 @@ extension ViewController:UICollectionViewDelegateFlowLayout, UICollectionViewDat
     }
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return 9
+        return 9 // It represents the number of cells
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let cell  = collectionView.dequeueReusableCell(withReuseIdentifier: "cell", for: indexPath)as! CustomCell
+        let cell  = collectionView.dequeueReusableCell(withReuseIdentifier: "cell", for: indexPath) as! ImageDisplay
         cell.backgroundColor = .white
         return cell
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        if let cell = collectionView.cellForItem(at: indexPath) as? CustomCell {
+        if let cell = collectionView.cellForItem(at: indexPath) as? ImageDisplay {
             let index = indexPath.row + 1
-            if playerNumber == 2 {
-                playerNumber = 1
-                cell.onTapImage(playerNumber: playerNumber)
-                player2.append(index)
-                for x in 0 ..< win.count {
-                    position = 0
-                    for y in 0 ..< win[x].count {
-                        for k in 0 ..< player2.count{
-                            if( win[x][y] == player2[k]){
-                                position += 1
-                            }
-                        }
-                    }
-                    if(position == positionMatch){
-                        if let viewController = self as? ViewController {
-                            viewController.winDisplay(playerNumber : 2)
-                        }
-                        break
+            if let viewController = self as? ViewController {
+                viewController.determine(index: index)
+            }
+            cell.onTapImage(playerNumber: playerNumber)
+            if noTie{
+                filled = player1 + player2
+                filled.sort()
+                if filled.elementsEqual(allPositions){
+                    if let viewController = self as? ViewController {
+                        viewController.gameOver()
                     }
                 }
             }
-            else{
-                playerNumber = 2
-                player1.append(index)
-                for x in 0 ..< win.count {
-                    position = 0
-                    for y in 0 ..< win[x].count {
-                        for k in 0 ..< player1.count{
-                            if( win[x][y] == player1[k]){
-                                position += 1
-                            }
-                        }
-                    }
-                    if(position == positionMatch){
-                        if let viewController = self as? ViewController {
-                            viewController.winDisplay(playerNumber : 1)
-                        }
-                        break
-                    }
-                }
-                cell.onTapImage(playerNumber : playerNumber)
-            }
-            filled = player1 + player2
-            filled.sort()
-            if filled.elementsEqual(allPositions){
-                if let viewController = self as? ViewController {
-                    viewController.gameOver()
-                }
-            }
-        }
-    }
-}
-
-class CustomCell: UICollectionViewCell{
-    var noOfTimesTap:String!
-    fileprivate let bg: UIImageView = {
-        let iv = UIImageView()
-        iv.translatesAutoresizingMaskIntoConstraints = false
-        iv.contentMode = .scaleAspectFit
-        iv.clipsToBounds = true
-        return iv
-    }()
-    
-    @objc func onTapImage(playerNumber : Int){
-        let iv = UIImageView()
-        if playerNumber == 1 {
-            iv.image = #imageLiteral(resourceName: "circle")
-        }
-        if playerNumber == 2 {
-            iv.image = #imageLiteral(resourceName: "cross")
-        }
-        iv.translatesAutoresizingMaskIntoConstraints = false
-        iv.contentMode = .scaleAspectFit
-        iv.clipsToBounds = true
-        contentView.addSubview(iv)
-        NSLayoutConstraint.activate([
-            iv.topAnchor.constraint(equalTo:contentView.topAnchor),
-            iv.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-            iv.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-            iv.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
-        ])
-    }
-    
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        contentView.addSubview(bg)
-        bg.isUserInteractionEnabled = true
-        
-        NSLayoutConstraint.activate([
-            bg.topAnchor.constraint(equalTo:contentView.topAnchor),
-            bg.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-            bg.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-            bg.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
             
-        ])
-    }
-    required init?(coder: NSCoder) {
-        fatalError("Init is not implemented")
+        }
     }
 }
 
