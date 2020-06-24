@@ -13,8 +13,7 @@ class ViewController:UIViewController{
     var result:UILabel!
     var tie:UILabel!
     let localizedTie = NSLocalizedString("tie", comment: "")
-    let resultString = NSLocalizedString("Player %d Wins!", comment: "")
-    
+    let resultString = NSLocalizedString("winner", comment: "")
     
     fileprivate let collectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
@@ -58,47 +57,37 @@ class ViewController:UIViewController{
         ])
     }
     
+    func handlePlayer(playerNumber : Int, playerArray : [Int]){
+        for x in 0 ..< win.count {
+            position = 0
+            for y in 0 ..< win[x].count {
+                for k in 0 ..< playerArray.count{
+                    if( win[x][y] == playerArray[k]){
+                        position += 1
+                    }
+                }
+            }
+            if(position == positionMatch){
+                noTie = false
+                winDisplay(playerNumber: playerNumber)
+                break
+            }
+        }
+    }
+    
     func determine(index : Int){
         if playerNumber == 2 {
-            playerNumber = 1
             player2.append(index)
-            for x in 0 ..< win.count {
-                position = 0
-                for y in 0 ..< win[x].count {
-                    for k in 0 ..< player2.count{
-                        if( win[x][y] == player2[k]){
-                            position += 1
-                        }
-                    }
-                }
-                if(position == positionMatch){
-                    noTie = false
-                    winDisplay(playerNumber: 2)
-                    break
-                }
-            }
+            handlePlayer(playerNumber : playerNumber, playerArray : player2)
+            playerNumber = 1
         }
         else{
-            playerNumber = 2
             player1.append(index)
-            for x in 0 ..< win.count {
-                position = 0
-                for y in 0 ..< win[x].count {
-                    for k in 0 ..< player1.count{
-                        if( win[x][y] == player1[k]){
-                            position += 1
-                        }
-                    }
-                }
-                if(position == positionMatch){
-                    noTie = false
-                    winDisplay(playerNumber: 1)
-                    break
-                }
-            }
+            handlePlayer(playerNumber : playerNumber, playerArray : player1)
+            playerNumber = 2
         }
-        
     }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         view.addSubview(collectionView)
@@ -131,18 +120,14 @@ extension ViewController:UICollectionViewDelegateFlowLayout, UICollectionViewDat
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         if let cell = collectionView.cellForItem(at: indexPath) as? ImageDisplay {
-            let index = indexPath.row + 1
-            if let viewController = self as? ViewController {
-                viewController.determine(index: index)
-            }
+            let index = indexPath.row
+            self.determine(index : index)
             cell.onTapImage(playerNumber: playerNumber)
             if noTie{
                 filled = player1 + player2
                 filled.sort()
                 if filled.elementsEqual(allPositions){
-                    if let viewController = self as? ViewController {
-                        viewController.gameOver()
-                    }
+                    self.gameOver()
                 }
             }
             
