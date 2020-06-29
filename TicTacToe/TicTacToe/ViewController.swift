@@ -1,4 +1,6 @@
 import UIKit
+import RxSwift
+import RxCocoa
 
 class ViewController:UIViewController{
     var player1:[Int] = []
@@ -14,6 +16,8 @@ class ViewController:UIViewController{
     var tie:UILabel!
     let localizedTie = NSLocalizedString("tie", comment: "")
     let resultString = NSLocalizedString("winner", comment: "")
+    var index = BehaviorRelay<Int>(value: 0)
+    let disposeBag = DisposeBag()
     
     fileprivate let collectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
@@ -120,8 +124,11 @@ extension ViewController:UICollectionViewDelegateFlowLayout, UICollectionViewDat
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         if let cell = collectionView.cellForItem(at: indexPath) as? ImageDisplay {
-            let index = indexPath.row
-            self.determine(index : index)
+            index = BehaviorRelay<Int>(value: indexPath.row + 1)
+            index.asObservable()
+                .subscribe(onNext: { val in
+                    self.determine(index: val)
+                }).disposed(by: disposeBag)
             cell.onTapImage(playerNumber: playerNumber)
             if noTie{
                 filled = player1 + player2
@@ -130,7 +137,6 @@ extension ViewController:UICollectionViewDelegateFlowLayout, UICollectionViewDat
                     self.gameOver()
                 }
             }
-            
         }
     }
 }
