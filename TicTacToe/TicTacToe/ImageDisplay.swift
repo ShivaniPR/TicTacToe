@@ -10,7 +10,7 @@ class ImageDisplay: UICollectionViewCell{
         return iv
     }()
     
-    @objc func onTapImage(playerNumber : Int){
+    @objc func setCrossOrCircle(playerNumber : Int){
         let imageView = UIImageView()
         if playerNumber == 1 {
             imageView.image = #imageLiteral(resourceName: "circle")

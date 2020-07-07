@@ -8,5 +8,6 @@ target 'TicTacToe' do
   # Pods for TicTacToe
   pod "RxSwift", "~> 5.0"
   pod "RxCocoa", "~> 5.0"
+  pod "RxDataSources", "~> 4.0"
 
 end
