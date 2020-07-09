@@ -1,6 +1,18 @@
 import UIKit
+import RxDataSources
+import RxSwift
+import RxCocoa
 
-class ViewController:UIViewController{
+extension MySection : SectionModelType {
+    typealias Item = Int
+    
+    init(original: MySection, items: [Item]) {
+        self = original
+        self.items = items
+    }
+}
+
+class ViewController: UIViewController,UICollectionViewDelegateFlowLayout{
     var player1:[Int] = []
     var player2:[Int] = []
     var position = 0
@@ -14,14 +26,28 @@ class ViewController:UIViewController{
     var tie:UILabel!
     let localizedTie = NSLocalizedString("tie", comment: "")
     let resultString = NSLocalizedString("winner", comment: "")
-    
-    fileprivate let collectionView: UICollectionView = {
+    let disposeBag = DisposeBag()
+    let collectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
         let cv = UICollectionView(frame: .zero, collectionViewLayout: layout)
         cv.translatesAutoresizingMaskIntoConstraints = false
-        cv.register(ImageDisplay.self , forCellWithReuseIdentifier: "cell")
+        cv.register(ImageDisplay.self , forCellWithReuseIdentifier: "Cell")
         return cv
     }()
+    
+    let sections = [
+        MySection(items: [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+        ])
+    ]
     
     func winDisplay(playerNumber : Int){
         result = UILabel()
@@ -75,7 +101,7 @@ class ViewController:UIViewController{
         }
     }
     
-    func determine(index : Int){
+    func determinePlayerNumber(index : Int){
         if playerNumber == 2 {
             player2.append(index)
             handlePlayer(playerNumber : playerNumber, playerArray : player2)
@@ -86,52 +112,80 @@ class ViewController:UIViewController{
             handlePlayer(playerNumber : playerNumber, playerArray : player1)
             playerNumber = 2
         }
+        if noTie{
+            filled = player1 + player2
+            filled.sort()
+            if filled.elementsEqual(allPositions){
+                self.gameOver()
+            }
+        }
     }
     
     override func viewDidLoad() {
         super.viewDidLoad()
         view.addSubview(collectionView)
-        collectionView.backgroundColor = .black
-        collectionView.delegate = self
-        collectionView.dataSource = self
         NSLayoutConstraint.activate([
-            collectionView.topAnchor.constraint(equalTo: view.topAnchor, constant: 20),
-            collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 10),
-            collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -10),
-            collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -20)
+            collectionView.topAnchor.constraint(equalTo: view.topAnchor),
+            collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
+        setFunctionalityOfSelectedItem()
+        setDataSource()
     }
-}
-
-extension ViewController:UICollectionViewDelegateFlowLayout, UICollectionViewDataSource{
+    
+    func setFunctionalityOfSelectedItem(){
+        collectionView.rx.itemSelected
+            .subscribe(onNext:{ indexPath in
+                let index = Int(indexPath.row + 1)
+                self.determinePlayerNumber(index: index)
+                if let cell = self.collectionView.cellForItem(at: indexPath) as? ImageDisplay {
+                    cell.setCrossOrCircle(playerNumber: self.playerNumber)
+                }
+            }).disposed(by: disposeBag)
+    }
+    
+    func setDataSource(){
+        let dataSource = RxCollectionViewSectionedReloadDataSource<MySection>(
+            configureCell: { dataSource, cv, indexPath, item in
+                let cell = cv.dequeueReusableCell(withReuseIdentifier: "Cell", for: indexPath) as! ImageDisplay
+                cell.backgroundColor = .white
+                return cell
+        })
+        Observable.just(sections)
+            .bind(to: collectionView.rx.items(dataSource: dataSource))
+            .disposed(by: disposeBag)
+        collectionView.rx.setDelegate(self).disposed(by: disposeBag)
+    }
+    
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         return CGSize(width: collectionView.frame.width/3.5 + 10, height: collectionView.frame.height/3)
     }
-    
-    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return 9 // It represents the number of cells
-    }
-    
-    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let cell  = collectionView.dequeueReusableCell(withReuseIdentifier: "cell", for: indexPath) as! ImageDisplay
-        cell.backgroundColor = .white
-        return cell
-    }
-    
-    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        if let cell = collectionView.cellForItem(at: indexPath) as? ImageDisplay {
-            let index = indexPath.row
-            self.determine(index : index)
-            cell.onTapImage(playerNumber: playerNumber)
-            if noTie{
-                filled = player1 + player2
-                filled.sort()
-                if filled.elementsEqual(allPositions){
-                    self.gameOver()
-                }
-            }
-            
-        }
-    }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
